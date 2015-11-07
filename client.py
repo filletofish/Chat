@@ -3,9 +3,8 @@ __author__ = 'filletofish'
 import socket
 import sys
 
-
-def sendmsg (sock, str = str):
-    str += '$$'
+def sendmsg (sock: socket, str: str):
+    str += '$$' #my end of string
     sock.sendall(str.encode())
 
 def getmsg(sock = socket):
@@ -59,7 +58,6 @@ try:
                 getmsg(sock)
             except socket.error as msg:
                 pass
-                print('..')
 
             print("Enter your message or just press Enter to get one")
             data = input()
