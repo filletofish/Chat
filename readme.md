@@ -1,7 +1,7 @@
-## README
+##README
 This project was created as a homework given at Computer Networks class in BMSTU.
 The task was to write a chat using sockets on UDS.
-#Requests
+####Requests
 Client should be able to:
 * to connect and to disconnect from server
 * get and send messages
@@ -9,20 +9,22 @@ Client should be able to:
 
 I use threads in order many clients to connect at the same time.
 
-#Server:
+####Server:
 Run:
-'''
+
+```
 $ python3 server.py
-'''
+```
 
 And just wait for clients
 
-#Client:
+####Client:
 
 Run:
-'''
+
+```
 $ python3 client.py
-'''
+```
 
 Follow given instructions.
 You may write 'help' in client STDIN
