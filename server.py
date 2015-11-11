@@ -19,11 +19,17 @@ class ClientThread(threading.Thread):
 # Note that we do not override Thread's __init__ method.
 # The Queue module makes this not necessary.
 
+    def __init__(self, connection):
+        threading.Thread.__init__(self)
+        self.connection = connection
+
     def run(self):
         # Have our thread serve "forever":
         while True:
             # Get a client out of the queue
-            client = clientPool.get()
+            
+            #client = clientPool.get()
+            client = self.connection
 
             # Check if we actually have an actual client in the client variable:
             if client != None:
@@ -88,8 +94,8 @@ sock.listen(number_of_working_threads)
 
 
 # Start two threads:
-for x in range(number_of_working_threads):
-    ClientThread().start()
+#for x in range(number_of_working_threads):
+    #ClientThread().start()
 
 
 
@@ -97,7 +103,8 @@ while True:
     # Wait for a connection
     print ('SERVER:  waiting for a connection')
     connection, client_address = sock.accept()
-    clientPool.put(connection)
+    #clientPool.put(connection)
+    ClientThread(connection).start()
 
 
 

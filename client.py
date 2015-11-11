@@ -3,7 +3,10 @@ __author__ = 'filletofish'
 import socket
 import sys
 
-def sendmsg (sock: socket, str: str):
+def sendmsg (sock, str):
+    if len(str) > 512:
+        print("Message is shorten!")
+        str = str[:512]
     str += '$$' #my end of string
     sock.sendall(str.encode())
 
