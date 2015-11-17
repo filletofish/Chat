@@ -1,34 +1,37 @@
 __author__ = 'filletofish'
 
-from queue import Queue
 import socket
 import os
 import threading
 
+
+LISTENERS = 5
+EOF_SPECIFIER = '$$'
+
 server_address = './uds_socket'
-number_of_working_threads = 5
 #Dictionary for keeping current connections
-dict_of_current_connections = {}
+current_connections = {}
 
 
 #TODO: handle conflict of names (both clients choose the same name)
 #TODO: auto updating chat (how??)
 
+# Threading lock for sync our current_connections
+lock = threading.Lock()
+
 # A revised version of our thread class:
 class ClientThread(threading.Thread):
-# Note that we do not override Thread's __init__ method.
-# The Queue module makes this not necessary.
+
 
     def __init__(self, connection):
         threading.Thread.__init__(self)
         self.connection = connection
 
     def run(self):
+        global lock
+
         # Have our thread serve "forever":
         while True:
-            # Get a client out of the queue
-            
-            #client = clientPool.get()
             client = self.connection
 
             # Check if we actually have an actual client in the client variable:
@@ -37,24 +40,50 @@ class ClientThread(threading.Thread):
                     print('SERVER:  connection from', client)
                     name = str(client.recv(1024))[1:]
                     print('SERVER: ' + name + ' has joined the chat')
-                    dict_of_current_connections[name] = connection
-                    # Receive the data in small chunks and retransmit it
-                    while True:
-                        data = client.recv(1024)
-                        print ('SERVER:  received', data)
 
-                        if str(data) == "b'0'":
+                    #Locking
+                    lock.acquire()
+                    try:
+                        current_connections[name] = connection
+                    finally:
+                        lock.release()
+
+                    # Receive the data in small chunks and retransmit it
+                    data =''
+                    msg = ''
+                    while True:
+
+                        while True:
+                            new_data = client.recv(1024)
+                            data += str(new_data)[1:] #deleting 'b'
+                            if EOF_SPECIFIER in data:
+                                x = data.find('$$')
+                                msg = data [1:x]
+                                data = data[x + 3:]
+                                print (msg)
+                                print (data)
+                                break
+
+                        print ('SERVER:  received', msg)
+
+                        if str(msg) == '0':
                             print('SERVER: Client ' + name + ' disconnected')
                             break
-                        elif str(data) == "b'1'":
+                        elif str(msg) == '1':
                             print('SERVER: Client ' + name + ' asks for dict of current connections')
-                            ctn = dict_of_current_connections.get(name)
-                            ctn.sendall(dict_of_current_connections.keys().__str__()[10:-1].encode())
-                        elif data:
+                            ctn = current_connections.get(name)
+                            ctn.sendall(current_connections.keys().__str__()[10:-1].encode())
+                        elif msg:
                             print ('SERVER:  sending data back to the client')
-                            data = (name + ': ' + str(data)[1:]).encode()
-                            for ctn in dict_of_current_connections.values():
-                                ctn.sendall(data)
+                            msg = (name + ': ' + '\'' + msg + EOF_SPECIFIER).encode()
+
+                            # Locking
+                            lock.acquire()
+                            try:
+                                for ctn in current_connections.values():
+                                    ctn.sendall(msg)
+                            finally:
+                                lock.release()
 
                         else:
                             print ('SERVER: no more data from client')
@@ -63,17 +92,18 @@ class ClientThread(threading.Thread):
                 finally:
                     # Clean up the connection
                     print('closing' + name)
-                    del dict_of_current_connections[name]
-                    #print('deleted: ' + dict_of_current_connections.pop(name))
+                    # Locking
+                    lock.acquire()
+                    try:
+                        del current_connections[name]
+                    finally:
+                        lock.acquire()
+
                     print('rest:')
-                    print(dict_of_current_connections.keys())
+                    print(current_connections.keys())
                     client.close()
 
 
-
-
-# Create our Queue:
-clientPool = Queue(0)
 
 # Make sure the socket does not already exist
 try:
@@ -90,25 +120,11 @@ print ('SERVER:  starting up on %s' % server_address)
 sock.bind(server_address)
 
 # Listen for incoming connections
-sock.listen(number_of_working_threads)
-
-
-# Start two threads:
-#for x in range(number_of_working_threads):
-    #ClientThread().start()
-
+sock.listen(LISTENERS)
 
 
 while True:
     # Wait for a connection
     print ('SERVER:  waiting for a connection')
     connection, client_address = sock.accept()
-    #clientPool.put(connection)
     ClientThread(connection).start()
-
-
-
-
-
-
-
