@@ -22,7 +22,6 @@ lock = threading.Lock()
 # A revised version of our thread class:
 class ClientThread(threading.Thread):
 
-
     def __init__(self, connection):
         threading.Thread.__init__(self)
         self.connection = connection
@@ -97,7 +96,7 @@ class ClientThread(threading.Thread):
                     try:
                         del current_connections[name]
                     finally:
-                        lock.acquire()
+                        lock.release()
 
                     print('rest:')
                     print(current_connections.keys())
