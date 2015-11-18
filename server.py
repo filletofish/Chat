@@ -57,7 +57,7 @@ class ClientThread(threading.Thread):
                             new_data = client.recv(1024)
                             data += str(new_data)[1:] #deleting 'b'
                             if EOF_SPECIFIER in data:
-                                x = data.find('$$')
+                                x = data.find(EOF_SPECIFIER)
                                 msg = data [1:x]
                                 data = data[x + 3:]
                                 print (msg)
